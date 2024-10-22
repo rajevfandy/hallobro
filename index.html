@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OPEN</title>
+    <style>
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            /* Prevent scrolling */
+        }
+
+        body {
+            background-image: url('bg.jpg');
+            /* Default background */
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            color: white;
+            font-family: Verdana, sans-serif;
+            font-size: 4vw;
+            /* Ukuran font responsif */
+        }
+
+        .new-background {
+            background-image: url('foto.jpg');
+            /* New background */
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        #clickButton {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            color: white;
+            z-index: 2;
+            background: transparent;
+            padding: 20px;
+            /* Ukuran responsif */
+        }
+
+        button {
+            background-color: #bc0707;
+            border: none;
+            padding: 10px;
+            /* Ukuran responsif */
+            font-size: 10px;
+            /* Ukuran font responsif */
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        button:hover {
+            background-color: #FF6F33;
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        #reloadButton {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            position: absolute;
+            bottom: 20px;
+            /* Adjust position as needed */
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            color: white;
+            z-index: 2;
+        }
+
+        #reloadButton button {
+            background-color: #bc0707;
+            border: none;
+            padding: 10px;
+            /* Responsive padding */
+            font-size: 10px;
+            /* Responsive font size */
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        #reloadButton button:hover {
+            background-color: #FF6F33;
+        }
+
+        #reloadButton button:active {
+            transform: scale(0.95);
+        }
+
+        @media (max-width: 768px) {
+            body {
+                font-size: 4vw;
+                /* Ukuran font lebih kecil */
+            }
+
+            #clickButton {
+                padding: 10px;
+                /* Padding lebih kecil untuk tombol */
+            }
+
+            button {
+                font-size: 4vw;
+                /* Ukuran font lebih kecil untuk tombol */
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                font-size: 3vw;
+                /* Ukuran font lebih kecil lagi */
+            }
+
+            #clickButton {
+                bottom: 5%;
+                /* Posisi lebih tinggi di layar kecil */
+            }
+
+            button {
+                padding: 8px 16px;
+                /* Ukuran tombol lebih kecil */
+                font-size: 3.5vw;
+                /* Ukuran font lebih kecil */
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="clickButton" role="button" aria-label="Open the birthday gift and start the celebration">
+        <button id="openGiftBtn">KLIK SAYA</button>
+    </div>
+
+    <div id="reloadButton" role="button" aria-label="Reload the page" style="display: none;">
+        <button id="reloadBtn">RELOAD</button>
+    </div>
+
+    <audio id="celebrationSound" src="selamatulangtahun.mp3" preload="auto"></audio>
+    <canvas id="canvas" aria-hidden="true"></canvas>
+
+    <script>
+        var canvas = document.getElementById('canvas');
+        var ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        var w = canvas.width,
+            h = canvas.height;
+
+        var opts = {
+            letterOrder: ['H', 'A', 'P', 'P', 'Y', 'B', 'I', 'R', 'T', 'H', 'D', 'A', 'Y'],
+            balloonBaseSize: 20,
+            balloonAddedSize: 20,
+            balloonBaseVel: 0.2,
+            balloonAddedVel: 0.2,
+        };
+
+        var balloons = [];
+        var fireworks = [];
+        var fireworksActive = false;
+
+        var iconImg = new Image();
+        iconImg.src = 'confetti.png'; // Path to the icon image
+
+        function Balloon(letter, x, y) {
+            this.letter = letter;
+            this.x = x;
+            this.y = y;
+            this.size = opts.balloonBaseSize + Math.random() * opts.balloonAddedSize;
+            this.velocity = -opts.balloonBaseVel - Math.random() * opts.balloonAddedVel;
+            this.color = getSolidBalloonColor();
+        }
+
+        Balloon.prototype.update = function () {
+            this.y += this.velocity;
+        };
+
+        Balloon.prototype.draw = function () {
+            ctx.fillStyle = this.color;
+            ctx.beginPath();
+            ctx.ellipse(this.x, this.y, this.size, this.size * 1.5, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(this.x, this.y + this.size * 1.5);
+            ctx.lineTo(this.x, this.y + this.size * 2);
+            ctx.stroke();
+
+            if (this.letter) {
+                ctx.fillStyle = 'white';
+                ctx.font = '30px Verdana';
+                ctx.textAlign = 'center';
+                ctx.fillText(this.letter, this.x, this.y - this.size * 1.5);
+            }
+        };
+
+        function Firework(x, y) {
+            this.x = x;
+            this.y = y;
+            this.particles = [];
+            this.exploded = false;
+
+            for (let i = 0; i < 200; i++) {
+                this.particles.push({
+                    x: x,
+                    y: y,
+                    velocityX: (Math.random() - 0.5) * 12,
+                    velocityY: (Math.random() - 0.5) * 12,
+                    alpha: 1,
+                    color: getSolidBalloonColor(),
+                    size: Math.random() * 4 + 2,
+                });
+            }
+        }
+
+        Firework.prototype.update = function () {
+            if (!this.exploded) {
+                this.y -= 5;
+                if (this.y < h / 2) {
+                    this.exploded = true;
+                }
+            }
+
+            if (this.exploded) {
+                this.particles.forEach(particle => {
+                    particle.x += particle.velocityX;
+                    particle.y += particle.velocityY;
+                    particle.alpha -= 0.02;
+                });
+            }
+        };
+
+        Firework.prototype.draw = function () {
+            if (!this.exploded) {
+                ctx.fillStyle = 'white';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 5, 0, Math.PI * 2);
+                ctx.fill();
+            } else {
+                this.particles.forEach(particle => {
+                    ctx.fillStyle = particle.color;
+                    ctx.globalAlpha = particle.alpha;
+                    ctx.beginPath();
+                    ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+                ctx.globalAlpha = 1;
+            }
+        };
+
+        function createBalloons() {
+            opts.letterOrder.forEach((letter, index) => {
+                var xPosition = (w / opts.letterOrder.length) * index + (w / opts.letterOrder.length) / 2;
+                balloons.push(new Balloon(letter, xPosition, h));
+            });
+        }
+
+        document.getElementById('openGiftBtn').onclick = function () {
+            // Change background
+            document.body.classList.toggle('new-background');
+
+            var audio = document.getElementById('celebrationSound');
+            audio.play();
+
+            // Hide the open gift button and start animation
+            document.getElementById('clickButton').style.display = 'none';
+            createBalloons();
+            fireworksActive = true;
+            animate();
+
+            // Hide reload button if it's visible
+            document.getElementById('reloadButton').style.display = 'none';
+        };
+
+        // Modify the animate function to show reload button at the end
+        function animate() {
+            ctx.clearRect(0, 0, w, h);
+            displayText();
+
+            balloons.forEach((balloon) => {
+                balloon.update();
+                balloon.draw();
+            });
+
+            balloons = balloons.filter(balloon => balloon.y + balloon.size * 1.5 > 0);
+
+            if (fireworksActive && Math.random() < 0.02) {
+                fireworks.push(new Firework(Math.random() * w, h));
+            }
+
+            fireworks.forEach((firework, index) => {
+                firework.update();
+                firework.draw();
+
+                if (firework.particles.every(particle => particle.alpha <= 0)) {
+                    fireworks.splice(index, 1);
+                }
+            });
+
+            // Check if all balloons are off the screen
+            if (balloons.length === 0 && fireworks.length === 0) {
+                // Show the reload button
+                document.getElementById('reloadButton').style.display = 'flex';
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        let discoColors = [
+            '#FF5733', // Red
+            '#FFBD33', // Orange
+            '#33FF57', // Green
+            '#3358FF', // Blue
+            '#FF33A2', // Pink
+            '#FFC300', // Yellow
+            '#DAF7A6', // Light Green
+            '#FF33F6'  // Magenta
+        ];
+
+        function displayText() {
+            var text = 'HAPPY BIRTHDAY';
+            var fullText = text.split('').join(' '); // Adds space between letters
+
+            ctx.font = '50px Verdana';
+            ctx.textAlign = 'center';
+
+            // Draw each letter in a different disco color
+            for (var i = 0; i < fullText.length; i++) {
+                ctx.fillStyle = discoColors[Math.floor(Math.random() * discoColors.length)]; // Random disco color
+                ctx.fillText(fullText[i], w / 2 - (fullText.length / 2) * 25 + i * 25, h / 4); // Adjust position for each letter
+            }
+        }
+
+
+        // Reload button functionality
+        document.getElementById('reloadBtn').onclick = function () {
+            location.reload(); // Reload the current page
+        };
+
+        function getSolidBalloonColor() {
+            const colors = ['#FF5733', '#33FF57', '#3357FF', '#FF33A8', '#FFDA33'];
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
+
+        window.addEventListener('resize', function () {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            w = canvas.width;
+            h = canvas.height;
+        });
+
+        // Stop animations when audio ends
+        document.getElementById('celebrationSound').addEventListener('ended', function () {
+            animationActive = false; // Stop animation
+            fireworksActive = false; // Stop fireworks
+            // Show the reload button
+            document.getElementById('reloadButton').style.display = 'flex';
+        });
+
+    </script>
+</body>
+
+</html>
